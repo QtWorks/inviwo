@@ -400,8 +400,8 @@ struct CImgLoadVolumeDispatcher {
             throw Exception("CImgLoadVolumeDispatcher, could not find proper data type");
         }
 
-        // Image is up-side-down
-        img.mirror('y');
+        // Image is flipped in x and y (at least for tif)
+        img.mirror("xy");
 
         return CImgToVoidConvert<typename DF::primitive>::convert(dst, &img);
     }
@@ -431,6 +431,20 @@ void* loadVolumeData(void* dst, const std::string& filePath, size3_t& dimensions
     } else {
         formatId = DataFormatId::Float32;
     }
+
+    CImgLoadVolumeDispatcher disp;
+    return dispatching::dispatch<void*, dispatching::filter::All>(formatId, disp, dst, filePath,
+                                                                  dimensions, formatId);
+}
+
+void* loadTiffVolumeData(void* dst, const std::string& filePath, size3_t& dimensions,
+                     DataFormatId& formatId) {
+    /*std::string fileExtension = toLower(filesystem::getFileExtension(filePath));
+    if (extToBaseTypeMap_.find(fileExtension) != extToBaseTypeMap_.end()) {
+        formatId = extToBaseTypeMap_[fileExtension];
+    } else {
+        formatId = DataFormatId::Float32;
+    }*/
 
     CImgLoadVolumeDispatcher disp;
     return dispatching::dispatch<void*, dispatching::filter::All>(formatId, disp, dst, filePath,
