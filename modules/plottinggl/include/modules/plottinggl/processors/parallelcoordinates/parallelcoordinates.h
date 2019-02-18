@@ -46,6 +46,7 @@
 #include <inviwo/core/rendering/meshdrawer.h>
 #include <modules/brushingandlinking/ports/brushingandlinkingports.h>
 #include <modules/plotting/datastructures/dataframe.h>
+#include <modules/plotting/properties/axisproperty.h>
 #include <modules/opengl/rendering/meshdrawergl.h>
 #include <modules/opengl/shader/shader.h>
 #include <modules/opengl/rendering/texturequadrenderer.h>
@@ -95,8 +96,8 @@ protected:
 
 private:
     void createOrUpdateProperties();
-
-    void buildLineMesh(const std::vector<ParallelCoordinatesAxisSettingsProperty *> &enabledAxis);
+    using ColumnAxis = std::pair<std::shared_ptr<const Column>, AxisProperty *>; 
+    void buildLineMesh(const std::vector<ColumnAxis> &enabledAxis);
     void drawAxis(size2_t size,
                   const std::vector<ParallelCoordinatesAxisSettingsProperty *> &enabledAxis);
     void drawHandles(size2_t size,
@@ -109,6 +110,8 @@ private:
                     const std::vector<ParallelCoordinatesAxisSettingsProperty *> &enabledAxis);
 
     void updateBrushing();
+    double getNormalized(const AxisProperty &axis, double v) const;
+    void updateFromColumn(const Column& c, AxisProperty &axis);
 
     DataInport<DataFrame> dataFrame_;
     BrushingAndLinkingInport brushingAndLinking_;
@@ -165,7 +168,8 @@ private:
     std::unique_ptr<Mesh> lines_;
     std::unique_ptr<MeshDrawerGL> linesDrawer_;
 
-    std::vector<ParallelCoordinatesAxisSettingsProperty *> axisVector_;  // owned by axisProperty_
+
+    std::vector<ColumnAxis> axisVector_;  // owned by axisProperty_
 
     PickingMapper linePicking_;
     PickingMapper handlePicking_;
