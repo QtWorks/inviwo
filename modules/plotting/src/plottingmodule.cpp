@@ -55,6 +55,7 @@ PlottingModule::PlottingModule(InviwoApplication* app) : InviwoModule(app, "Plot
     registerProcessor<plot::VolumeToDataFrame>();
     registerProcessor<plot::VolumeSequenceToDataFrame>();
     registerProperty<plot::AxisProperty>();
+    registerProperty<plot::CategoricalAxisProperty>();
     registerProperty<plot::DataFrameColumnProperty>();
     registerProperty<plot::MajorTickProperty>();
     registerProperty<plot::MarginProperty>();

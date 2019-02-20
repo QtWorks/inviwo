@@ -94,6 +94,26 @@ private:
     void adjustAlignment();
 };
 
+class IVW_MODULE_PLOTTING_API CategoricalAxisProperty : public AxisProperty {
+public: 
+	virtual std::string getClassIdentifier() const override;
+    static const std::string classIdentifier;
+
+    CategoricalAxisProperty(const std::string& identifier, const std::string& displayName,
+                            std::vector<std::string> categories = {"Category"},
+                 Orientation orientation = Orientation::Horizontal,
+                 InvalidationLevel invalidationLevel = InvalidationLevel::InvalidOutput,
+                 PropertySemantics semantics = PropertySemantics::Default);
+    CategoricalAxisProperty(const CategoricalAxisProperty& rhs);
+    CategoricalAxisProperty& operator=(const CategoricalAxisProperty& rhs) = default;
+    virtual CategoricalAxisProperty* clone() const override;
+    virtual ~CategoricalAxisProperty() = default;
+
+	const std::vector<std::string> getCategories() const { return categories_; }
+	protected:
+    std::vector<std::string> categories_;
+};
+
 }  // namespace plot
 
 }  // namespace inviwo

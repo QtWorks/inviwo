@@ -169,6 +169,36 @@ void AxisProperty::adjustAlignment() {
     caption_.font_.anchorPos_.set(anchor);
 }
 
+
+const std::string CategoricalAxisProperty::classIdentifier = "org.inviwo.CategoricalAxisProperty";
+std::string CategoricalAxisProperty::getClassIdentifier() const { return classIdentifier; }
+
+CategoricalAxisProperty::CategoricalAxisProperty(const std::string& identifier,
+                                                 const std::string& displayName,
+                                                 std::vector<std::string> categories,
+                                                 Orientation orientation,
+                                                 InvalidationLevel invalidationLevel,
+                                                 PropertySemantics semantics)
+    : AxisProperty(identifier, displayName, orientation, invalidationLevel, semantics)
+    , categories_(categories) {
+    range_.set({0, static_cast<double>(categories_.size() - 1)},
+               {0, static_cast<double>(categories_.size() - 1)}, 1.0, 0);
+    ticks_.majorTicks_.tickDelta_.set(1.0);
+    ticks_.majorTicks_.tickDelta_.setReadOnly(true);
+    ticks_.minorTicks_.tickFrequency_.set(0, 0, 1, 1);
+    ticks_.minorTicks_.setVisible(false);
+}
+
+CategoricalAxisProperty::CategoricalAxisProperty(const CategoricalAxisProperty& rhs)
+    : AxisProperty(rhs) {
+
+    
+}
+
+CategoricalAxisProperty* CategoricalAxisProperty::clone() const {
+    return new CategoricalAxisProperty(*this);
+}
+
 }  // namespace plot
 
 }  // namespace inviwo

@@ -202,6 +202,8 @@ public:
 
     virtual void add(const std::string &value) override;
 
+    const std::vector<std::string> &getCategories() const { return lookUpTable_; }
+
 private:
     virtual glm::uint32_t addOrGetID(const std::string &str);
 
