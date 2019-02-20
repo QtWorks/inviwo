@@ -61,6 +61,8 @@ public:
     std::shared_ptr<Mesh> getMesh() const;
     std::shared_ptr<Texture2D> getLabelAtlasTexture() const;
 
+	size2_t getCaptionTextSize() const { return axisCaptionTex_ ? axisCaptionTex_->getDimensions() : size2_t{0}; }
+
 protected:
     void renderAxis(Camera* camera, const size2_t& outputDims, bool antialiasing);
 

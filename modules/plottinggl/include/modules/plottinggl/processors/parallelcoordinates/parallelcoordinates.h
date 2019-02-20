@@ -47,6 +47,8 @@
 #include <modules/brushingandlinking/ports/brushingandlinkingports.h>
 #include <modules/plotting/datastructures/dataframe.h>
 #include <modules/plotting/properties/axisproperty.h>
+#include <modules/plottinggl/utils/axisrenderer.h>
+
 #include <modules/opengl/rendering/meshdrawergl.h>
 #include <modules/opengl/shader/shader.h>
 #include <modules/opengl/rendering/texturequadrenderer.h>
@@ -96,12 +98,54 @@ protected:
 
 private:
     void createOrUpdateProperties();
-    using ColumnAxis = std::pair<std::shared_ptr<const Column>, AxisProperty *>; 
-    void buildLineMesh(const std::vector<ColumnAxis> &enabledAxis);
+
+    struct AxisData {
+        AxisProperty *prop;
+        bool upperBrushed_ = false;  //! Flag to indicated if the upper handle is brushing away data
+        bool lowerBrushed_ = false;  //! Flag to indicated if the lower handle is brushing away data
+
+        double p0_;
+        double p25_;
+        double p75_;
+        double p100_;
+
+        size_t columnId_;
+        bool updating_ = false;
+        std::function<double(size_t)> at = [](size_t) { return 0.0; };
+
+		double getValue(double v) const {
+            const auto rangeTmp = prop->range_.getRange();
+            if (v <= 0) {
+                return rangeTmp.x;
+            }
+            if (v >= 1) {
+                return rangeTmp.y;
+            }
+            //if (!usePercentiles.get()) {
+                return rangeTmp.x + v * (rangeTmp.y - rangeTmp.x);
+            //} else {
+            //    if (v < 0.25) {
+            //        v /= 0.25;
+            //        return p0_ + v * (p25_ - p0_);
+            //    } else if (v < 0.75) {
+            //        v -= 0.25;
+            //        v /= 0.5;
+            //        return p25_ + v * (p75_ - p25_);
+            //    } else {
+            //        v -= 0.75;
+            //        v /= 0.25;
+            //        return p75_ + v * (p100_ - p75_);
+            //    }
+            //}
+        }
+    };
+
+    using ColumnAxis =
+        std::tuple<std::shared_ptr<const Column>, AxisProperty *, AxisRenderer, AxisData>;
+    void buildLineMesh(const std::vector<ColumnAxis*>& enabledAxis);
     void drawAxis(size2_t size,
                   const std::vector<ParallelCoordinatesAxisSettingsProperty *> &enabledAxis);
-    void drawHandles(size2_t size,
-                     const std::vector<ParallelCoordinatesAxisSettingsProperty *> &enabledAxis);
+    void drawHandles(size2_t size, const std::vector<ColumnAxis*>& enabledAxis);
     void drawLines(size2_t size);
 
     void buildTextCache(const std::vector<ParallelCoordinatesAxisSettingsProperty *> &enabledAxis);
@@ -111,7 +155,7 @@ private:
 
     void updateBrushing();
     double getNormalized(const AxisProperty &axis, double v) const;
-    void updateFromColumn(const Column& c, AxisProperty &axis);
+    void updateFromColumn(const Column &c, AxisProperty &axis);
 
     DataInport<DataFrame> dataFrame_;
     BrushingAndLinkingInport brushingAndLinking_;
@@ -167,7 +211,6 @@ private:
 
     std::unique_ptr<Mesh> lines_;
     std::unique_ptr<MeshDrawerGL> linesDrawer_;
-
 
     std::vector<ColumnAxis> axisVector_;  // owned by axisProperty_
 
