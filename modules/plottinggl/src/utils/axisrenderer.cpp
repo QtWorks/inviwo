@@ -310,10 +310,9 @@ void AxisRenderer::renderText(const size2_t& outputDims, const size2_t& startPos
         // render axis caption centered at the axis using the offset
         const vec2 texDims(axisCaptionTex_->getDimensions());
         const auto anchor(property_.caption_.font_.anchorPos_.get());
-
-        const auto rotation = property_.orientation_ == AxisProperty::Orientation::Vertical
-                                  ? glm::rotate(glm::half_pi<float>(), vec3(0.0f, 0.0f, 1.0f))
-                                  : glm::mat4{1};
+        auto angle = glm::radians(property_.caption_.rotation_.get()) + 
+            (property_.orientation_ == AxisProperty::Orientation::Vertical ? glm::half_pi<float>() : 0.f);
+        const auto rotation = glm::rotate(angle, vec3(0.0f, 0.0f, 1.0f));
 
         const auto offset =
             property_.orientation_ == AxisProperty::Orientation::Vertical
@@ -334,11 +333,11 @@ void AxisRenderer::renderText(const size2_t& outputDims, const size2_t& startPos
         if (labelPos_.empty()) {
             updateLabelPositions(startPos, endPos);
         }
-
+        const auto rotation = glm::rotate(glm::radians(property_.labels_.rotation_.get()), vec3(0.0f, 0.0f, 1.0f));
         // render axis labels
         const auto& renderInfo = labelTexAtlas_.getRenderInfo();
         quadRenderer_.renderToRect(labelTexAtlas_.getTexture(), labelPos_, renderInfo.size,
-                                   renderInfo.texTransform, outputDims);
+                                   renderInfo.texTransform, outputDims, rotation);
     }
 }
 
