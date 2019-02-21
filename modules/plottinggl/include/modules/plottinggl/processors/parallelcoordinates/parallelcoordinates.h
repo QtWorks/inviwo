@@ -99,49 +99,8 @@ protected:
 private:
     void createOrUpdateProperties();
 
-    struct AxisData {
-        AxisProperty *prop;
-        bool upperBrushed_ = false;  //! Flag to indicated if the upper handle is brushing away data
-        bool lowerBrushed_ = false;  //! Flag to indicated if the lower handle is brushing away data
-
-        double p0_;
-        double p25_;
-        double p75_;
-        double p100_;
-
-        size_t columnId_;
-        bool updating_ = false;
-        std::function<double(size_t)> at = [](size_t) { return 0.0; };
-
-		double getValue(double v) const {
-            const auto rangeTmp = prop->range_.getRange();
-            if (v <= 0) {
-                return rangeTmp.x;
-            }
-            if (v >= 1) {
-                return rangeTmp.y;
-            }
-            //if (!usePercentiles.get()) {
-                return rangeTmp.x + v * (rangeTmp.y - rangeTmp.x);
-            //} else {
-            //    if (v < 0.25) {
-            //        v /= 0.25;
-            //        return p0_ + v * (p25_ - p0_);
-            //    } else if (v < 0.75) {
-            //        v -= 0.25;
-            //        v /= 0.5;
-            //        return p25_ + v * (p75_ - p25_);
-            //    } else {
-            //        v -= 0.75;
-            //        v /= 0.25;
-            //        return p75_ + v * (p100_ - p75_);
-            //    }
-            //}
-        }
-    };
-
     using ColumnAxis =
-        std::tuple<std::shared_ptr<const Column>, AxisProperty *, AxisRenderer, AxisData>;
+        std::tuple<std::shared_ptr<const Column>, AxisProperty *, AxisRenderer, ParallelCoordinatesAxisSettingsProperty*>;
     void buildLineMesh(const std::vector<ColumnAxis*>& enabledAxis);
     void drawAxis(size2_t size,
                   const std::vector<ParallelCoordinatesAxisSettingsProperty *> &enabledAxis);
@@ -155,8 +114,6 @@ private:
 
 	void updateLayout(); // Call every time image size or margin changes
     void updateBrushing();
-    double getNormalized(const AxisProperty &axis, double v) const;
-    void updateFromColumn(const Column &c, AxisProperty &axis);
 
     DataInport<DataFrame> dataFrame_;
     BrushingAndLinkingInport brushingAndLinking_;

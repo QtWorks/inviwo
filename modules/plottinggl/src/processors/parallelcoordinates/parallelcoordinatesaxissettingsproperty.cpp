@@ -35,27 +35,27 @@
 namespace inviwo {
 namespace plot {
 
-//namespace detail {
-//enum class FilterResult { Upper, Lower, None };
-///**
-// * Helper for brushing data
-// * @param value to filter
-// * @param range to use for filtering
-// * @return true if if value is outside range and not missing data.
-// */
-//FilterResult filterValue(const double& value, const dvec2& range) {
-//    // Do not filter missing data (NaN)
-//    if (util::isnan(value)) return FilterResult::None;
-//    if (value < range.x) {
-//        return FilterResult::Lower;
-//    }
-//    if (value > range.y) {
-//        return FilterResult::Upper;
-//    }
-//    return FilterResult::None;
-//}
-//
-//}  // namespace detail
+namespace detail {
+enum class FilterResult { Upper, Lower, None };
+/**
+ * Helper for brushing data
+ * @param value to filter
+ * @param range to use for filtering
+ * @return true if if value is outside range and not missing data.
+ */
+FilterResult filterValue(const double& value, const dvec2& range) {
+    // Do not filter missing data (NaN)
+    if (util::isnan(value)) return FilterResult::None;
+    if (value < range.x) {
+        return FilterResult::Lower;
+    }
+    if (value > range.y) {
+        return FilterResult::Upper;
+    }
+    return FilterResult::None;
+}
+
+}  // namespace detail
 
 const std::string ParallelCoordinatesAxisSettingsProperty::classIdentifier =
     "org.inviwo.parallelcoordinates.axissettingsproperty";
@@ -64,10 +64,11 @@ std::string ParallelCoordinatesAxisSettingsProperty::getClassIdentifier() const 
 }
 
 ParallelCoordinatesAxisSettingsProperty::ParallelCoordinatesAxisSettingsProperty(
-    std::string identifier, std::string displayName)
-    : BoolCompositeProperty(identifier, displayName, true)
+    std::string identifier, std::string displayName, bool checked, InvalidationLevel invalidationLevel,
+                           PropertySemantics semantics)
+    : BoolCompositeProperty(identifier, displayName, checked, invalidationLevel, semantics)
     , usePercentiles("usePercentiles", "Use Percentiles", false)
-    , range("range", "Axis Range") {
+    , range("range", "Filter Range") {
     addProperty(range);
     addProperty(usePercentiles);
 
@@ -211,21 +212,21 @@ void ParallelCoordinatesAxisSettingsProperty::moveHandle(bool upper, double mous
 }
 
 void ParallelCoordinatesAxisSettingsProperty::updateBrushing(std::unordered_set<size_t>& brushed) {
-    //if (updating_) return;
-    //auto rangeTmp = range.get();
-    //// Increase range to avoid conversion issues
-    //const static dvec2 off(-std::numeric_limits<float>::epsilon(),
-    //                       std::numeric_limits<float>::epsilon());
-    //rangeTmp += off;
-    //upperBrushed_ = false;
-    //lowerBrushed_ = false;
-    //for (size_t i = 0; i < col_->getSize(); i++) {
-    //    auto filtered = detail::filterValue(at(i), rangeTmp);
-    //    if (filtered == detail::FilterResult::None) continue;
-    //    brushed.insert(i);
-    //    if (filtered == detail::FilterResult::Upper) upperBrushed_ = true;
-    //    if (filtered == detail::FilterResult::Lower) lowerBrushed_ = true;
-    //}
+    if (updating_) return;
+    auto rangeTmp = range.get();
+    // Increase range to avoid conversion issues
+    const static dvec2 off(-std::numeric_limits<float>::epsilon(),
+                           std::numeric_limits<float>::epsilon());
+    rangeTmp += off;
+    upperBrushed_ = false;
+    lowerBrushed_ = false;
+    for (size_t i = 0; i < col_->getSize(); i++) {
+        auto filtered = detail::filterValue(at(i), rangeTmp);
+        if (filtered == detail::FilterResult::None) continue;
+        brushed.insert(i);
+        if (filtered == detail::FilterResult::Upper) upperBrushed_ = true;
+        if (filtered == detail::FilterResult::Lower) lowerBrushed_ = true;
+    }
 }
 
 }  // namespace plot

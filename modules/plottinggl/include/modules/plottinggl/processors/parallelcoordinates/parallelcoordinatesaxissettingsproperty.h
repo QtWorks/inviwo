@@ -37,6 +37,8 @@
 #include <inviwo/core/properties/boolproperty.h>
 #include <modules/opengl/texture/texture2d.h>
 
+#include <modules/plotting/properties/axisproperty.h>
+
 namespace inviwo {
 namespace plot {
 class Column;
@@ -52,7 +54,8 @@ public:
     virtual std::string getClassIdentifier() const override;
     static const std::string classIdentifier;
 
-    ParallelCoordinatesAxisSettingsProperty(std::string identifier, std::string displayName);
+    ParallelCoordinatesAxisSettingsProperty(std::string identifier, std::string displayName,  bool checked = true, InvalidationLevel invalidationLevel = InvalidationLevel::InvalidOutput,
+                 PropertySemantics semantics = PropertySemantics::Default);
     ParallelCoordinatesAxisSettingsProperty(const ParallelCoordinatesAxisSettingsProperty& rhs);
     ParallelCoordinatesAxisSettingsProperty& operator=(
         const ParallelCoordinatesAxisSettingsProperty& that);
@@ -61,12 +64,12 @@ public:
     virtual ~ParallelCoordinatesAxisSettingsProperty() = default;
 
     /**
-     * Update the range of the axis based on the given column.
+     * Update the filterRange of the axis based on the given column.
      */
     void updateFromColumn(std::shared_ptr<const Column> col);
 
     /**
-     * Normalizes the value v from the range of the parameter to zero and one. Clamps out-of-bounds
+     * Normalizes the value v from the filterRange of the parameter to zero and one. Clamps out-of-bounds
      * values to zero and one. Using inverse linear interpolation between min and max unless
      * usePercentiles is checked. If usePercentiles is checked linear interpolation is used within
      * three percentile ranges (0-25, 25-75, 75-100).
@@ -80,7 +83,7 @@ public:
     double getNormalizedAt(size_t idx) const;
 
     /**
-     * Get data-range value from a normalized value. This the inverse function of getNormalized, ie
+     * Get data-filterRange value from a normalized value. This the inverse function of getNormalized, ie
      * (\f$ x = getValue(getNormalized(x)) \f$).
      * @see getNormalized(double)
      */
