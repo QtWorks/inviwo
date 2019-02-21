@@ -225,7 +225,7 @@ std::shared_ptr<Texture2D> AxisRendererBase::getLabelAtlasTexture() const {
     return labelTexAtlas_.getTexture();
 }
 
-void AxisRendererBase::updateCaptionTexture() {
+void AxisRendererBase::updateCaptionTexture() const {
     // set up text renderer
     textRenderer_.setFont(property_.caption_.font_.fontFace_.get());
     textRenderer_.setFontSize(property_.caption_.font_.fontSize_.get());
@@ -310,14 +310,20 @@ void AxisRenderer::renderText(const size2_t& outputDims, const size2_t& startPos
         // render axis caption centered at the axis using the offset
         const vec2 texDims(axisCaptionTex_->getDimensions());
         const auto anchor(property_.caption_.font_.anchorPos_.get());
+
         auto angle = glm::radians(property_.caption_.rotation_.get()) + 
             (property_.orientation_ == AxisProperty::Orientation::Vertical ? glm::half_pi<float>() : 0.f);
         const auto rotation = glm::rotate(angle, vec3(0.0f, 0.0f, 1.0f));
 
-        const auto offset =
+        const auto offset2 =
             property_.orientation_ == AxisProperty::Orientation::Vertical
                 ? vec2(-texDims.y, texDims.x) * 0.5f * (vec2(-anchor.x, anchor.y) + vec2(1.0f))
                 : texDims * 0.5f * (anchor + vec2(1.0f));
+        const auto offset =
+            vec2(rotation * vec4(texDims * 0.5f * (anchor + vec2(1.0f)), 0.f, 1.f));
+            //property_.orientation_ == AxisProperty::Orientation::Vertical
+            //    ? vec2(-texDims.y, texDims.x) * 0.5f * (vec2(-anchor.x, anchor.y) + vec2(1.0f))
+            //    : texDims * 0.5f * (anchor + vec2(1.0f));
 
         const ivec2 posi(plot::getAxisCaptionPosition(property_, startPos, endPos) - offset);
         quadRenderer_.render(axisCaptionTex_, posi, outputDims, rotation);

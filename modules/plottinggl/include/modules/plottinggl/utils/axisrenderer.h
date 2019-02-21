@@ -61,21 +61,24 @@ public:
     std::shared_ptr<Mesh> getMesh() const;
     std::shared_ptr<Texture2D> getLabelAtlasTexture() const;
 
-	size2_t getCaptionTextSize() const { return axisCaptionTex_ ? axisCaptionTex_->getDimensions() : size2_t{0}; }
+	size2_t getCaptionTextSize() const {
+        if (!axisCaptionTex_) updateCaptionTexture();
+        return axisCaptionTex_->getDimensions();
+    }
 
 protected:
     void renderAxis(Camera* camera, const size2_t& outputDims, bool antialiasing);
 
     void invalidateInternalState(bool positionChange);
 
-    void updateCaptionTexture();
+    void updateCaptionTexture() const;
     void updateLabelAtlas();
 
     virtual void invalidateLabelPositions() = 0;
 
     const AxisProperty& property_;
 
-    TextRenderer textRenderer_;
+    mutable TextRenderer textRenderer_;
     TextureQuadRenderer quadRenderer_;
 
     Shader lineShader_;
@@ -84,7 +87,7 @@ protected:
     std::shared_ptr<Mesh> majorTicksMesh_;
     std::shared_ptr<Mesh> minorTicksMesh_;
 
-    std::shared_ptr<Texture2D> axisCaptionTex_;
+    mutable std::shared_ptr<Texture2D> axisCaptionTex_;
 
     util::TextureAtlas labelTexAtlas_;
 };

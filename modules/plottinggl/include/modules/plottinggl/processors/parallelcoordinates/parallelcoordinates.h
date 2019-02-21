@@ -153,6 +153,7 @@ private:
     void renderText(size2_t size,
                     const std::vector<ParallelCoordinatesAxisSettingsProperty *> &enabledAxis);
 
+	void updateLayout(); // Call every time image size or margin changes
     void updateBrushing();
     double getNormalized(const AxisProperty &axis, double v) const;
     void updateFromColumn(const Column &c, AxisProperty &axis);

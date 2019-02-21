@@ -218,6 +218,7 @@ ParallelCoordinates::ParallelCoordinates()
     labelPosition_.addOption("none", "None", LabelPosition::None);
     labelPosition_.addOption("above", "Above", LabelPosition::Above);
     labelPosition_.addOption("below", "Below", LabelPosition::Below);
+    labelPosition_.onChange([&]() { updateLayout(); });
     labelPosition_.setSelectedIndex(2);
 
     autoMargins_.onChange([&]() {
@@ -235,7 +236,7 @@ ParallelCoordinates::ParallelCoordinates()
                 const auto &renderer = std::get<2>(p);
                 if (labelPosition_.get() != LabelPosition::None) {
                     if (leftLabelWidth == 0) {
-                        leftLabelWidth = renderer.getCaptionTextSize().x / 2.f;
+                        leftLabelWidth = renderer.getCaptionTextSize().x;
                     }
                     rightLabelWidth = renderer.getCaptionTextSize().x / 2.f;
                     maxLabelHeight = std::max(maxLabelHeight, renderer.getCaptionTextSize().y);
@@ -257,6 +258,8 @@ ParallelCoordinates::ParallelCoordinates()
         bottom += handleSize_.get().y;
         margins_.setMargins(top + 1, right + 1, bottom + 1, left + 1);
         // plus 1 to avoid text at the directly at the borders
+
+        updateLayout();
     });
 
     TransferFunction tf;
@@ -329,8 +332,8 @@ ParallelCoordinates::ParallelCoordinates()
 
     resetHandlePositions_.onChange([&]() {
         for (auto axis : axisVector_) {
-            //axis->moveHandle(true, std::numeric_limits<double>::max());
-            //axis->moveHandle(false, std::numeric_limits<double>::lowest());
+            // axis->moveHandle(true, std::numeric_limits<double>::max());
+            // axis->moveHandle(false, std::numeric_limits<double>::lowest());
         }
     });
 
@@ -342,7 +345,7 @@ ParallelCoordinates::~ParallelCoordinates() {}
 void ParallelCoordinates::process() {
     auto dims = outport_.getDimensions();
 
-    std::vector<ColumnAxis*> enabledAxis;
+    std::vector<ColumnAxis *> enabledAxis;
     auto col = 0;
     for (auto &p : axisVector_) {
         if (std::get<1>(p)->visible_) {
@@ -356,7 +359,7 @@ void ParallelCoordinates::process() {
     }
 
     if (!lines_ || recreateLines_) {
-       buildLineMesh(enabledAxis);
+        buildLineMesh(enabledAxis);
     }
     if (!handleDrawer_) {
         handleDrawer_ =
@@ -376,17 +379,16 @@ void ParallelCoordinates::process() {
     utilgl::activateAndClearTarget(outport_, ImageType::ColorPicking);
     utilgl::GlBoolState depthTest(GL_DEPTH_TEST, false);
 
-    //buildTextCache(enabledAxis);
+    // buildTextCache(enabledAxis);
 
-    //drawAxis(dims, enabledAxis);
+    // drawAxis(dims, enabledAxis);
     drawLines(dims);
     drawHandles(dims, enabledAxis);
-    //renderText(dims, enabledAxis);
+    // renderText(dims, enabledAxis);
     std::vector<AxisRenderer> axisRenderers_;
 
-	const size2_t lowerLeft(margins_.getLeft(), margins_.getBottom());
-    const size2_t upperRight(dims.x - 1 - margins_.getRight(),
-                             dims.y - 1 - margins_.getTop());
+    const size2_t lowerLeft(margins_.getLeft(), margins_.getBottom());
+    const size2_t upperRight(dims.x - 1 - margins_.getRight(), dims.y - 1 - margins_.getTop());
 
     const auto padding = 0;
     float dx = 1.0f / (enabledAxis.size() - 1);
@@ -394,11 +396,10 @@ void ParallelCoordinates::process() {
     for (size_t i = 0; i < enabledAxis.size(); i++) {
         auto x = static_cast<size_t>(i * dx * (upperRight.x - lowerLeft.x));
         AxisRenderer renderer(*std::get<1>(*enabledAxis[i]));
-        std::get<2>(*enabledAxis[i]).render(dims, lowerLeft + size2_t(x, padding),
-                        size2_t(lowerLeft.x + x, upperRight.y - padding));
-	}
-
-
+        std::get<2>(*enabledAxis[i])
+            .render(dims, lowerLeft + size2_t(x, padding),
+                    size2_t(lowerLeft.x + x, upperRight.y - padding));
+    }
 
     utilgl::deactivateCurrentTarget();
 }
@@ -418,13 +419,12 @@ void ParallelCoordinates::createOrUpdateProperties() {
             std::string displayName = c->getHeader();
             std::string identifier = util::stripIdentifier(displayName);
 
-			auto prop = [&]() -> AxisProperty * {
+            auto prop = [&]() -> AxisProperty * {
                 if (auto p = axisProperties_.getPropertyByIdentifier(identifier)) {
                     if (auto pcasp = dynamic_cast<AxisProperty *>(p)) {
                         return pcasp;
                     }
-                    throw inviwo::Exception(
-                        "Failed to convert property to AxisProperty");
+                    throw inviwo::Exception("Failed to convert property to AxisProperty");
                 } else {
                     AxisProperty *ptr = nullptr;
                     if (auto categoricalColumn = dynamic_cast<const CategoricalColumn *>(c.get())) {
@@ -441,8 +441,7 @@ void ParallelCoordinates::createOrUpdateProperties() {
                         newProp->caption_.title_ = c->getHeader();
                         ptr = newProp.get();
                         axisProperties_.addProperty(newProp.release());
-                        
-					}
+                    }
                     ptr->ticks_.minorTicks_.style_.setSelectedValue(TickStyle::None);
                     ptr->caption_.rotation_.set(270);
                     ptr->caption_.position_.set(0.f);
@@ -456,7 +455,7 @@ void ParallelCoordinates::createOrUpdateProperties() {
             AxisData axisData;
             axisData.columnId_ = axisVector_.size();
             axisData.prop = prop;
-			{
+            {
                 util::KeepTrueWhileInScope updating(&axisData.updating_);
                 c->getBuffer()
                     ->getRepresentation<BufferRAM>()
@@ -477,8 +476,8 @@ void ParallelCoordinates::createOrUpdateProperties() {
                         double prevMaxRatio = (prevVal.y - prevRange.x) / (l);
 
                         prop->range_.set(glm::tvec2<T>(minV, maxV), glm::tvec2<T>(minV, maxV),
-                                         static_cast<T>((maxV - minV)*0.1), 0);
-                        //if (l > 0 && maxV != minV) {
+                                         static_cast<T>((maxV - minV) * 0.1), 0);
+                        // if (l > 0 && maxV != minV) {
                         //    prop->range_.set({minV + prevMinRatio * (maxV - minV),
                         //               minV + prevMaxRatio * (maxV - minV)});
                         //}
@@ -491,16 +490,24 @@ void ParallelCoordinates::createOrUpdateProperties() {
                             return static_cast<double>(vec->at(idx));
                         };
                     });
-                        }
-                axisVector_.emplace_back(std::make_tuple(c, prop, AxisRenderer(*prop), axisData));
-                prop->setVisible(true);
-                //updateFromColumn(*c, *prop);
+            }
+            AxisRenderer renderer(*prop);
+            vec2 captionPos(0.f - 0.5f * renderer.getCaptionTextSize().x, 0.f - handleH / -5);
+            prop->caption_.position_.set(captionPos.y, captionPos.y - 20.f, captionPos.y + 20.f,
+                                         1.f);
+
+            prop->caption_.offset_.set(captionPos.x, captionPos.x - 20.f, captionPos.x + 20.f, 1.f);
+            axisVector_.emplace_back(std::make_tuple(c, prop, renderer, axisData));
+            prop->setVisible(true);
+            // updateFromColumn(*c, *prop);
         }
         handlePicking_.resize(axisVector_.size() * 2);
+
+        updateLayout();
     }
 }
 
-void ParallelCoordinates::buildLineMesh(const std::vector<ColumnAxis*>& enabledAxis) {
+void ParallelCoordinates::buildLineMesh(const std::vector<ColumnAxis *> &enabledAxis) {
     lines_ = util::make_unique<BasicMesh>();
 
     if (!enabledAxis.size()) {
@@ -526,7 +533,7 @@ void ParallelCoordinates::buildLineMesh(const std::vector<ColumnAxis*>& enabledA
 
     auto colorAxisId = selectedColorAxis_.get();
 
-    const auto& colorAxes = axisVector_[glm::clamp(colorAxisId, 0, (int)axisVector_.size() - 1)];
+    const auto &colorAxes = axisVector_[glm::clamp(colorAxisId, 0, (int)axisVector_.size() - 1)];
 
     float dx = 1.0f / (numberOfAxis - 1);
     for (size_t i = 0; i < numberOfLines; i++) {
@@ -535,8 +542,8 @@ void ParallelCoordinates::buildLineMesh(const std::vector<ColumnAxis*>& enabledA
         auto &ivVector = ib->getDataContainer();
         ivVector.reserve(enabledAxis.size());
         size_t col = 0;
-        float valueForColor =
-            static_cast<float>(getNormalized(*(std::get<1>(colorAxes)), std::get<0>(colorAxes)->getAsDouble(i)));
+        float valueForColor = static_cast<float>(
+            getNormalized(*(std::get<1>(colorAxes)), std::get<0>(colorAxes)->getAsDouble(i)));
         vec3 texCoord(valueForColor);
         auto color = sampler.sample(valueForColor);
         if (blendMode_.get() == BlendMode::Sutractive) {
@@ -547,7 +554,8 @@ void ParallelCoordinates::buildLineMesh(const std::vector<ColumnAxis*>& enabledA
         vec3 pickColor = linePicking_.getColor(i);
 
         for (auto &axes : enabledAxis) {
-            auto v = static_cast<float>(getNormalized(*(std::get<1>(*axes)), std::get<0>(*axes)->getAsDouble(i)));
+            auto v = static_cast<float>(
+                getNormalized(*(std::get<1>(*axes)), std::get<0>(*axes)->getAsDouble(i)));
             vec3 pos(col++ * dx, v, 0);
             ivVector.push_back(static_cast<glm::uint32_t>(vertices.size()));
             vertices.push_back({pos, pickColor, texCoord, color});
@@ -580,7 +588,7 @@ void ParallelCoordinates::drawAxis(
     axisShader_.deactivate();
 }
 
-void ParallelCoordinates::drawHandles(size2_t size, const std::vector<ColumnAxis*>& enabledAxis) {
+void ParallelCoordinates::drawHandles(size2_t size, const std::vector<ColumnAxis *> &enabledAxis) {
     utilgl::GlBoolState blendOn(GL_BLEND, true);
     utilgl::BlendModeEquationState blendEq(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_FUNC_ADD);
 
@@ -599,11 +607,11 @@ void ParallelCoordinates::drawHandles(size2_t size, const std::vector<ColumnAxis
 
     float dx = 1.0f / (enabledAxis.size() - 1);
     size_t i = 0;
-    for (const auto& axes : enabledAxis) {
+    for (const auto &axes : enabledAxis) {
         float x = i++ * dx;
         const auto &axisData = std::get<3>(*axes);
         auto pickingID = axisData.columnId_ * 2;
-        
+
         // lower
         handleShader_.setUniform("color",
                                  axisData.lowerBrushed_ ? filteredColor : notFilteredColor);
@@ -611,15 +619,18 @@ void ParallelCoordinates::drawHandles(size2_t size, const std::vector<ColumnAxis
         handleShader_.setUniform("w", handleSize_.get().x);
         handleShader_.setUniform("h", handleSize_.get().y);
         handleShader_.setUniform(
-            "y", static_cast<float>(getNormalized(*std::get<1>(*axes),  std::get<1>(*axes)->range_.get().x)));
+            "y", static_cast<float>(
+                     getNormalized(*std::get<1>(*axes), std::get<1>(*axes)->range_.get().x)));
         handleShader_.setUniform("flipped", 0);
         handleShader_.setUniform("pickColor", handlePicking_.getColor(pickingID + 0));
 
         handleDrawer_->draw();
 
-        handleShader_.setUniform("color", axisData.upperBrushed_ ? filteredColor : notFilteredColor);
-        handleShader_.setUniform("y", static_cast<float>(getNormalized(
-                                          *std::get<1>(*axes), std::get<1>(*axes)->range_.get().y)));
+        handleShader_.setUniform("color",
+                                 axisData.upperBrushed_ ? filteredColor : notFilteredColor);
+        handleShader_.setUniform(
+            "y", static_cast<float>(
+                     getNormalized(*std::get<1>(*axes), std::get<1>(*axes)->range_.get().y)));
         handleShader_.setUniform("flipped", 1);
         handleShader_.setUniform("pickColor", handlePicking_.getColor(pickingID + 1));
 
@@ -854,8 +865,9 @@ void ParallelCoordinates::handlePicked(PickingEvent *p) {
     if (p->getHoverState() == PickingHoverState::Move ||
         p->getHoverState() == PickingHoverState::Enter) {
         const auto rangeValue =
-            std::get<3>(axisVector_[axisID]).getValue(upper ? std::get<1>(axisVector_[axisID])->range_.getRangeMax()
-                                                : std::get<1>(axisVector_[axisID])->range_.getRangeMin());
+            std::get<3>(axisVector_[axisID])
+                .getValue(upper ? std::get<1>(axisVector_[axisID])->range_.getRangeMax()
+                                : std::get<1>(axisVector_[axisID])->range_.getRangeMin());
         p->setToolTip(std::to_string(rangeValue));
     } else {
         p->setToolTip("");
@@ -890,14 +902,42 @@ void ParallelCoordinates::handlePicked(PickingEvent *p) {
     }
 }
 
+void ParallelCoordinates::updateLayout() {
+    auto firstVisible = true;
+    for (auto &p : axisVector_) {
+        auto prop = std::get<1>(p);
+        if (firstVisible && prop->visible_) {
+            prop->placement_.set(AxisProperty::Placement::Outside);
+            firstVisible = false;
+        } else {
+            prop->placement_.set(AxisProperty::Placement::Inside);
+		}
+
+        prop->caption_.setChecked(labelPosition_.get() != LabelPosition::None);
+        const auto &renderer = std::get<2>(p);
+        auto dims = outport_.getDimensions();
+        float x = 0.f - 0.5f * renderer.getCaptionTextSize().x;
+        float y = (renderer.getCaptionTextSize().y + handleH + 5) / static_cast<float>(dims.y);
+
+        if (labelPosition_.get() == LabelPosition::Above) {
+            y += 1.f;
+        } else if (labelPosition_.get() == LabelPosition::Below) {
+            y = -y;
+        }
+        vec2 captionPos(x, y);
+
+        prop->caption_.position_.set(captionPos.y, captionPos.y - 0.1f, captionPos.y + .1f, 0.05f);
+    }
+}
+
 void ParallelCoordinates::updateBrushing() {
     brushingDirty_ = false;
     std::unordered_set<size_t> brushed;
 
     for (auto &axes : axisVector_) {
-        auto& column = std::get<0>(axes); 
-        auto axis = std::get<1>(axes); 
-        auto &axisData = std::get<3>(axes); 
+        auto &column = std::get<0>(axes);
+        auto axis = std::get<1>(axes);
+        auto &axisData = std::get<3>(axes);
         if (axisData.updating_) return;
         auto rangeTmp = axis->range_.get();
         // Increase range to avoid conversion issues
@@ -925,7 +965,7 @@ void ParallelCoordinates::updateBrushing() {
     brushingAndLinking_.sendFilterEvent(brushedID);
 }
 
-double ParallelCoordinates::getNormalized(const AxisProperty& axis, double v) const {
+double ParallelCoordinates::getNormalized(const AxisProperty &axis, double v) const {
     if (axis.range_.getRangeMax() == axis.range_.getRangeMin()) {
         return 0.5;
     }
@@ -936,8 +976,8 @@ double ParallelCoordinates::getNormalized(const AxisProperty& axis, double v) co
     if (v >= rangeTmp.y) {
         return 1;
     }
-    //if (!usePercentiles.get()) {
-        return (v - rangeTmp.x) / (rangeTmp.y - rangeTmp.x);
+    // if (!usePercentiles.get()) {
+    return (v - rangeTmp.x) / (rangeTmp.y - rangeTmp.x);
     //} else {
     //    double minV, maxV;
     //    double o, r;
@@ -965,7 +1005,7 @@ double ParallelCoordinates::getNormalized(const AxisProperty& axis, double v) co
 
 void ParallelCoordinates::updateFromColumn(const Column &c, AxisProperty &axis) {
 
-    //util::KeepTrueWhileInScope updating(&updating_);
+    // util::KeepTrueWhileInScope updating(&updating_);
     c.getBuffer()->getRepresentation<BufferRAM>()->dispatch<void, dispatching::filter::Scalars>(
         [&axis](auto ram) -> void {
             using T = typename util::PrecsionValueType<decltype(ram)>;
@@ -988,14 +1028,13 @@ void ParallelCoordinates::updateFromColumn(const Column &c, AxisProperty &axis) 
                     {minV + prevMinRatio * (maxV - minV), minV + prevMaxRatio * (maxV - minV)});
             }
             auto pecentiles = statsutil::percentiles(dataVector, {0., 0.25, 0.75, 1.});
-            //p0_ = static_cast<double>(pecentiles[0]);
-            //p25_ = static_cast<double>(pecentiles[1]);
-            //p75_ = static_cast<double>(pecentiles[2]);
-            //p100_ = static_cast<double>(pecentiles[3]);
-            //at = [vec = &dataVector](size_t idx) { return static_cast<double>(vec->at(idx)); };
+            // p0_ = static_cast<double>(pecentiles[0]);
+            // p25_ = static_cast<double>(pecentiles[1]);
+            // p75_ = static_cast<double>(pecentiles[2]);
+            // p100_ = static_cast<double>(pecentiles[3]);
+            // at = [vec = &dataVector](size_t idx) { return static_cast<double>(vec->at(idx)); };
         });
 }
-
 
 }  // namespace plot
 
